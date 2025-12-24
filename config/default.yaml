@@ -1,0 +1,196 @@
+# K3s Infrastructure Deployment - Default Configuration
+# Copy and modify this file for your environment
+
+vsphere:
+  host: vcenter.example.com
+  user: administrator@vsphere.local
+  password: ${VSPHERE_PASSWORD}
+  datacenter: Datacenter
+  cluster: Cluster
+  datastore: Datastore1
+  network: VM Network
+  folder: /vm/k3s-infrastructure
+
+packer:
+  # vSphere ISO configuration
+  iso_datastore: Datastore1
+  iso_path: /iso/debian-12.6.0-amd64-netinst.iso
+  
+  # Template names
+  k3s_node_template: debian-k3s-node-template
+  nfs_server_template: debian-nfs-server-template
+  
+  # Default hardware specifications
+  k3s_node:
+    cpu_cores: 2
+    memory_mb: 4096
+    disk_size_gb: 40
+  
+  nfs_server:
+    cpu_cores: 2
+    memory_mb: 4096
+    disk_size_gb: 40
+    additional_disk_size_gb: 500
+  
+  # Guest OS configuration
+  guest_os_type: debian12_64Guest
+  guest_os_family: Linux
+  guest_os_version: Debian GNU/Linux 12 (64-bit)
+
+terraform:
+  # Cluster configuration
+  cluster:
+    name: k3s-prod
+    domain: local
+    # Nodes will be named: k3s-prod-master-1, k3s-prod-worker-1, etc.
+  
+  # Master node configuration
+  master:
+    count: 1
+    cpu: 4
+    memory_mb: 8192
+    disk_size_gb: 40
+  
+  # Worker node configuration
+  worker:
+    count: 3
+    cpu: 4
+    memory_mb: 8192
+    disk_size_gb: 40
+  
+  # NFS server configuration
+  nfs_servers:
+    count: 2
+    cpu: 2
+    memory_mb: 4096
+    os_disk_size_gb: 40
+    storage_disk_size_gb: 500
+  
+  # Network configuration
+  network:
+    cidr: 192.168.100.0/24
+    gateway: 192.168.100.1
+    dns_servers:
+      - 8.8.8.8
+      - 8.8.4.4
+  
+  # vSphere resource pool
+  resource_pool: Resources
+
+ansible:
+  # SSH configuration
+  ssh:
+    user: debian
+    key_path: ~/.ssh/id_rsa
+    port: 22
+  
+  # k3s specific configuration
+  k3s:
+    version: v1.27.0  # k3s version
+    flannel_backend: vxlan
+    disable_metrics_server: false
+    
+    # Extra arguments for k3s
+    extra_server_args: ""
+    extra_agent_args: ""
+  
+  # NFS configuration
+  nfs:
+    export_path: /srv/nfs
+    export_options: "*(rw,sync,no_subtree_check,no_root_squash)"
+    mount_path: /mnt/nfs
+    ha_enabled: true
+    keepalive_interval: 3600
+
+helm:
+  # Helm chart repositories
+  repositories:
+    - name: stable
+      url: https://charts.helm.sh/stable
+    - name: bitnami
+      url: https://charts.bitnami.com/bitnami
+    - name: prometheus-community
+      url: https://prometheus-community.github.io/helm-charts
+    - name: grafana
+      url: https://grafana.github.io/helm-charts
+  
+  # Service deployments
+  services:
+    postgresql:
+      enabled: true
+      replicas: 3
+      storage_size: 10Gi
+      root_password: ${DB_ROOT_PASSWORD}
+      user: k3s
+      user_password: ${DB_USER_PASSWORD}
+    
+    gitea:
+      enabled: true
+      replicas: 2
+      storage_size: 20Gi
+      admin_user: admin
+      admin_password: ${GITEA_ADMIN_PASSWORD}
+      ldap:
+        enabled: true
+        server: ldap.example.com
+        port: 389
+        bind_dn: cn=admin,dc=example,dc=com
+        bind_password: ${LDAP_PASSWORD}
+        user_search_base: ou=users,dc=example,dc=com
+    
+    prometheus:
+      enabled: true
+      replicas: 2
+      storage_size: 50Gi
+      retention_days: 15
+    
+    grafana:
+      enabled: true
+      replicas: 2
+      storage_size: 5Gi
+      admin_user: admin
+      admin_password: ${GRAFANA_ADMIN_PASSWORD}
+      provisioning:
+        datasources_enabled: true
+        dashboards_enabled: true
+    
+    kubernetes_dashboard:
+      enabled: true
+      replicas: 1
+      storage_size: 2Gi
+
+# Security and access control
+security:
+  # Network policies
+  enable_network_policies: true
+  
+  # Pod security standards
+  pod_security_standard: baseline
+  
+  # RBAC configuration
+  rbac_enabled: true
+  
+  # TLS configuration
+  tls:
+    enabled: true
+    issuer: letsencrypt-prod
+    domain: k3s.example.com
+
+monitoring:
+  # Enable comprehensive monitoring
+  enabled: true
+  
+  # Alert rules
+  alert_rules_enabled: true
+  
+  # Log aggregation
+  logs:
+    enabled: false
+    retention_days: 30
+
+backup:
+  # Backup configuration
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention_days: 30
+  destination: nfs  # or s3, local
