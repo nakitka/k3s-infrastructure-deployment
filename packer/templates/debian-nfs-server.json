@@ -1,0 +1,133 @@
+{
+  "description": "Debian 12 template for NFS servers with additional storage disk",
+  "variables": {
+    "vcenter_host": "",
+    "vcenter_user": "",
+    "vcenter_password": "",
+    "vcenter_datacenter": "",
+    "vcenter_cluster": "",
+    "vcenter_datastore": "",
+    "vcenter_network": "",
+    "vcenter_folder": "",
+    "template_name": "debian-nfs-server-template",
+    "iso_datastore": "",
+    "iso_path": "",
+    "cpu_cores": "2",
+    "memory_mb": "4096",
+    "disk_size_gb": "40",
+    "additional_disk_size_gb": "500",
+    "ssh_username": "root",
+    "ssh_password": "packer",
+    "ssh_timeout": "20m"
+  },
+  "builders": [
+    {
+      "type": "vsphere-iso",
+      "vcenter_server": "{{ user `vcenter_host` }}",
+      "username": "{{ user `vcenter_user` }}",
+      "password": "{{ user `vcenter_password` }}",
+      "insecure_connection": false,
+      "datacenter": "{{ user `vcenter_datacenter` }}",
+      "cluster": "{{ user `vcenter_cluster` }}",
+      "datastore": "{{ user `vcenter_datastore` }}",
+      "vm_name": "{{ user `template_name` }}",
+      "folder": "{{ user `vcenter_folder` }}",
+      "network": "{{ user `vcenter_network` }}",
+      "iso_datastore": "{{ user `iso_datastore` }}",
+      "iso_path": "{{ user `iso_path` }}",
+      "disk_thin_provisioned": true,
+      "disk_size": "{{ user `disk_size_gb` }}",
+      "cpus": "{{ user `cpu_cores` }}",
+      "memory": "{{ user `memory_mb` }}",
+      "guest_os_type": "debian12_64Guest",
+      "notes": "Debian 12 template for NFS servers with HA configuration support",
+      "boot_wait": "10s",
+      "boot_command": [
+        "<esc><esc><esc>",
+        "<enter><wait>",
+        "install ",
+        "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+        "debian-installer=en_US.UTF-8 ",
+        "auto ",
+        "locale=en_US.UTF-8 ",
+        "kbd-chooser/method=us ",
+        "netcfg/get_hostname=nfs-server ",
+        "netcfg/get_domain=local ",
+        "fb=false ",
+        "debconf/verbose=false ",
+        "console-setup/ask_detect=false ",
+        "console-keymaps-at/keymap=us ",
+        "<enter><wait>"
+      ],
+      "http_directory": "http",
+      "http_port_min": 8000,
+      "http_port_max": 9000,
+      "http_bind_address": "0.0.0.0",
+      "shutdown_command": "echo 'packer' | sudo -S shutdown -P now",
+      "communicator": "ssh",
+      "ssh_username": "{{ user `ssh_username` }}",
+      "ssh_password": "{{ user `ssh_password` }}",
+      "ssh_port": 22,
+      "ssh_timeout": "{{ user `ssh_timeout` }}",
+      "ssh_pty": true,
+      "ssh_clear_authorized_keys": true,
+      "storage": [
+        {
+          "type": "vmdk",
+          "disk_size": "{{ user `additional_disk_size_gb` }}",
+          "disk_thin_provisioned": true,
+          "disk_datastore": "{{ user `vcenter_datastore` }}",
+          "disk_controller_index": 1
+        }
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "echo 'Waiting for cloud-init to complete...' && cloud-init status --wait && echo 'Cloud-init completed'"
+      ]
+    },
+    {
+      "type": "file",
+      "source": "scripts/",
+      "destination": "/tmp/scripts"
+    },
+    {
+      "type": "shell",
+      "script": "scripts/base-setup.sh",
+      "environment_vars": [
+        "TEMPLATE_TYPE=nfs-server"
+      ]
+    },
+    {
+      "type": "shell",
+      "script": "scripts/nfs-prep.sh"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "echo 'NFS template preparation completed successfully'",
+        "sudo apt-get clean",
+        "sudo apt-get autoclean",
+        "sudo apt-get autoremove -y",
+        "sudo rm -rf /tmp/* /var/tmp/*",
+        "history -c && history -w",
+        "echo 'Cleanup completed'"
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "manifest",
+      "output": "manifest-nfs-server.json",
+      "strip_path": true,
+      "custom_data": {
+        "template_type": "nfs-server",
+        "additional_disk_size_gb": "{{ user `additional_disk_size_gb` }}",
+        "created_at": "{{ isotime }}"
+      }
+    }
+  ]
+}
