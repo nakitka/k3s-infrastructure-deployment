@@ -1,0 +1,164 @@
+# Environment variables
+.env
+.env.local
+*.envrc
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate*
+plan.tfplan
+*.tfvars
+!*.example.tfvars
+.terraformrc
+
+# Packer
+manifest-*.json
+packer-manifest.log
+crash.log
+.packer.d/
+
+# Ansible
+*.retry
+.ansible/
+ansible.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# SSH Keys
+private_key
+private_key.pub
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# Configuration files (sensitive data)
+config/*.yaml
+config/*.yml
+!config/default.yaml
+!config/example.yaml
+
+# Logs
+*.log
+logs/
+deployment_*.log
+packer-*.log
+terraform-*.log
+ansible-*.log
+
+# Local directories
+local/
+temp/
+tmp/
+.local/
+
+# Build artifacts
+*.tar
+*.tar.gz
+*.zip
+
+# Ansible dynamic inventory
+inventory.ini
+inventory/
+*.cache
+
+# Kubernetes
+kubeconfig
+.kubeconfig
+kubeconfig-*
+
+# Helm
+helm-values-*.yaml
+
+# Backup files
+*.backup
+*.bak
+*.swp
+*~
+
+# OS specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Packer build artifacts
+crash.log
+crash.*.log
+*.iso
+*.img
+*.qcow2
+
+# Terraform state backups
+terraform.tfstate.backup
+terraform.tfstate.*.backup
+
+# Sensitive files
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+*.jks
+secrets.yml
+secrets.yaml
+secrets.json
+
+# Docker
+.docker/
+Docker.secrets
+
+# Deployment artifacts
+deployment-output/
+build-output/
+release/
+
+# Keep these common files
+!.gitkeep
+!example-*.yaml
+!template-*.yaml
